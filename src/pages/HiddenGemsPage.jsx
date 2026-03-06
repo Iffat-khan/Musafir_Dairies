@@ -21,6 +21,9 @@ export function HiddenGemsPage() {
     try {
       const r = await api.get("/gems", { params: { city } });
       setGems(r.data.gems ?? []);
+    } catch (err) {
+      console.error("Failed to load gems", err);
+      setGems([]);
     } finally {
       setLoading(false);
     }

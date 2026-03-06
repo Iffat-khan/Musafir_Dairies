@@ -1,36 +1,32 @@
 import React from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 
-// Fix default marker icons in bundlers
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
+// Lightweight map using an OpenStreetMap embed so we avoid Leaflet's
+// "Map container is already initialized" issues in React strict/dev mode.
 
 export function MapView({ center = [48.8566, 2.3522], markers = [], height = 360 }) {
+  const [lat, lng] = center;
+
+  const delta = 0.05;
+  const minLat = lat - delta;
+  const minLng = lng - delta;
+  const maxLat = lat + delta;
+  const maxLng = lng + delta;
+
+  const src = `https://www.openstreetmap.org/export/embed.html?bbox=${minLng},${minLat},${maxLng},${maxLat}&layer=mapnik&marker=${lat},${lng}`;
+
   return (
-    <div className="rounded-2xl overflow-hidden border border-white/10">
-      <MapContainer center={center} zoom={12} style={{ height, width: "100%" }}>
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {markers.map((m) => (
-          <Marker key={m.key ?? `${m.lat},${m.lng}`} position={[m.lat, m.lng]}>
-            <Popup>
-              <div className="text-sm">
-                <div className="font-semibold">{m.title}</div>
-                {m.subtitle ? <div className="opacity-80">{m.subtitle}</div> : null}
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+    <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/20">
+      <iframe
+        title="map"
+        src={src}
+        style={{ width: "100%", height }}
+        loading="lazy"
+      />
+      {markers?.length ? (
+        <div className="px-3 py-2 text-xs text-white/70 bg-black/40 border-t border-white/10">
+          Showing map near {markers[0].title ?? "selected location"}.
+        </div>
+      ) : null}
     </div>
   );
 }

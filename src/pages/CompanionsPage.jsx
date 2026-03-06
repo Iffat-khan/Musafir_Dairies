@@ -20,8 +20,13 @@ export function CompanionsPage() {
   const socketRef = React.useRef(null);
 
   async function refreshChats() {
-    const r = await api.get("/companions/chats");
-    setChats(r.data.chats ?? []);
+    try {
+      const r = await api.get("/companions/chats");
+      setChats(r.data.chats ?? []);
+    } catch (err) {
+      console.error("Failed to load chats", err);
+      setChats([]);
+    }
   }
 
   React.useEffect(() => {
@@ -29,23 +34,33 @@ export function CompanionsPage() {
   }, []);
 
   React.useEffect(() => {
-    const socket = io("http://localhost:4000", { withCredentials: true });
-    socketRef.current = socket;
+    try {
+      const socket = io("http://localhost:4000", { withCredentials: true });
+      socketRef.current = socket;
 
-    socket.on("chat:message", (msg) => {
-      setMessages((prev) => {
-        if (msg.chatId !== activeChatId) return prev;
-        return [...prev, msg];
+      socket.on("chat:message", (msg) => {
+        setMessages((prev) => {
+          if (msg.chatId !== activeChatId) return prev;
+          return [...prev, msg];
+        });
       });
-    });
 
-    return () => socket.disconnect();
+      return () => socket.disconnect();
+    } catch (err) {
+      console.error("Failed to connect to chat socket", err);
+      return () => {};
+    }
   }, [activeChatId]);
 
   async function openChat(chatId) {
     setActiveChatId(chatId);
-    const r = await api.get(`/companions/chats/${chatId}/messages`);
-    setMessages(r.data.messages ?? []);
+    try {
+      const r = await api.get(`/companions/chats/${chatId}/messages`);
+      setMessages(r.data.messages ?? []);
+    } catch (err) {
+      console.error("Failed to load chat messages", err);
+      setMessages([]);
+    }
     socketRef.current?.emit("chat:join", chatId);
   }
 
@@ -81,10 +96,15 @@ export function CompanionsPage() {
                 <Button
                   className="w-full"
                   onClick={async () => {
-                    const r = await api.get("/companions/search", {
-                      params: { destination, startDate: startDate || undefined, endDate: endDate || undefined },
-                    });
-                    setResults(r.data.results ?? []);
+                    try {
+                      const r = await api.get("/companions/search", {
+                        params: { destination, startDate: startDate || undefined, endDate: endDate || undefined },
+                      });
+                      setResults(r.data.results ?? []);
+                    } catch (err) {
+                      console.error("Failed to search companions", err);
+                      setResults([]);
+                    }
                   }}
                 >
                   Search
@@ -108,9 +128,13 @@ export function CompanionsPage() {
                     <Button
                       variant="secondary"
                       onClick={async () => {
-                        const r = await api.post("/companions/chats", { otherUserId: p.trip.user.id });
-                        await refreshChats();
-                        await openChat(r.data.chatId);
+                        try {
+                          const r = await api.post("/companions/chats", { otherUserId: p.trip.user.id });
+                          await refreshChats();
+                          await openChat(r.data.chatId);
+                        } catch (err) {
+                          console.error("Failed to open chat", err);
+                        }
                       }}
                       disabled={p.trip.user.id === user?.id}
                       className="shrink-0"

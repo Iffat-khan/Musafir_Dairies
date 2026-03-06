@@ -8,29 +8,40 @@ export function AlertsPage() {
   const [status, setStatus] = React.useState("disconnected");
 
   async function refresh() {
-    const r = await api.get("/alerts");
-    setAlerts(r.data.alerts ?? []);
+    try {
+      const r = await api.get("/alerts");
+      setAlerts(r.data.alerts ?? []);
+    } catch (err) {
+      console.error("Failed to load alerts", err);
+      setAlerts([]);
+    }
   }
 
   React.useEffect(() => {
     refresh();
 
     // Server-Sent Events stream for real-time alerts
-    const es = new EventSource("/api/alerts/stream", { withCredentials: true });
-    setStatus("connecting");
+    let es;
+    try {
+      es = new EventSource("/api/alerts/stream", { withCredentials: true });
+      setStatus("connecting");
 
-    es.addEventListener("hello", () => setStatus("connected"));
-    es.addEventListener("alert", (evt) => {
-      try {
-        const data = JSON.parse(evt.data);
-        setAlerts((prev) => [data, ...prev].slice(0, 150));
-      } catch {
-        // ignore
-      }
-    });
-    es.onerror = () => setStatus("disconnected");
+      es.addEventListener("hello", () => setStatus("connected"));
+      es.addEventListener("alert", (evt) => {
+        try {
+          const data = JSON.parse(evt.data);
+          setAlerts((prev) => [data, ...prev].slice(0, 150));
+        } catch {
+          // ignore
+        }
+      });
+      es.onerror = () => setStatus("disconnected");
+    } catch (err) {
+      console.error("Failed to open alerts stream", err);
+      setStatus("disconnected");
+    }
 
-    return () => es.close();
+    return () => es && es.close();
   }, []);
 
   return (

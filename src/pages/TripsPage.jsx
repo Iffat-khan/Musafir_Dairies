@@ -20,6 +20,9 @@ export function TripsPage() {
     try {
       const r = await api.get("/trips");
       setTrips(r.data.trips ?? []);
+    } catch (err) {
+      console.error("Failed to load trips", err);
+      setTrips([]);
     } finally {
       setLoading(false);
     }

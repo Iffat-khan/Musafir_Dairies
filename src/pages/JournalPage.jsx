@@ -17,18 +17,29 @@ export function JournalPage() {
   const [story, setStory] = React.useState(null);
 
   React.useEffect(() => {
-    api.get("/trips").then((r) => {
-      const list = r.data.trips ?? [];
-      setTrips(list);
-      if (list[0] && !tripId) setTripId(list[0].id);
-    });
+    api
+      .get("/trips")
+      .then((r) => {
+        const list = r.data.trips ?? [];
+        setTrips(list);
+        if (list[0] && !tripId) setTripId(list[0].id);
+      })
+      .catch((err) => {
+        console.error("Failed to load trips for journal", err);
+        setTrips([]);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function refresh() {
     if (!tripId) return;
-    const r = await api.get("/journal", { params: { tripId } });
-    setEntries(r.data.entries ?? []);
+    try {
+      const r = await api.get("/journal", { params: { tripId } });
+      setEntries(r.data.entries ?? []);
+    } catch (err) {
+      console.error("Failed to load journal entries", err);
+      setEntries([]);
+    }
   }
 
   React.useEffect(() => {
@@ -71,8 +82,13 @@ export function JournalPage() {
             <Button
               onClick={async () => {
                 if (!tripId) return;
-                const r = await api.post("/ai/trip-story", { tripId });
-                setStory(r.data);
+                try {
+                  const r = await api.post("/ai/trip-story", { tripId });
+                  setStory(r.data);
+                } catch (err) {
+                  console.error("Failed to generate trip story", err);
+                  setStory(null);
+                }
               }}
               disabled={!tripId}
             >

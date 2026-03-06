@@ -15,6 +15,9 @@ export function PhotoSpotsPage() {
     try {
       const r = await api.get("/photo-spots", { params: { city } });
       setSpots(r.data.spots ?? []);
+    } catch (err) {
+      console.error("Failed to load photo spots", err);
+      setSpots([]);
     } finally {
       setLoading(false);
     }

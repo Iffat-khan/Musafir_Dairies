@@ -18,23 +18,40 @@ export function BudgetPage() {
   const [error, setError] = React.useState("");
 
   React.useEffect(() => {
-    api.get("/trips").then((r) => {
-      const list = r.data.trips ?? [];
-      setTrips(list);
-      if (list[0] && !tripId) setTripId(list[0].id);
-    });
+    api
+      .get("/trips")
+      .then((r) => {
+        const list = r.data.trips ?? [];
+        setTrips(list);
+        if (list[0] && !tripId) setTripId(list[0].id);
+      })
+      .catch((err) => {
+        console.error("Failed to load trips for budget", err);
+        setTrips([]);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
     if (!tripId) return;
-    api.get(`/budget/${tripId}/summary`).then((r) => setSummary(r.data));
+    api
+      .get(`/budget/${tripId}/summary`)
+      .then((r) => setSummary(r.data))
+      .catch((err) => {
+        console.error("Failed to load budget summary", err);
+        setSummary(null);
+      });
   }, [tripId]);
 
   async function refreshSummary() {
     if (!tripId) return;
-    const r = await api.get(`/budget/${tripId}/summary`);
-    setSummary(r.data);
+    try {
+      const r = await api.get(`/budget/${tripId}/summary`);
+      setSummary(r.data);
+    } catch (err) {
+      console.error("Failed to refresh budget summary", err);
+      setSummary(null);
+    }
   }
 
   return (
